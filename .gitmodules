@@ -15,3 +15,6 @@
 [submodule "lib/dss-gem-joins"]
 	path = lib/dss-gem-joins
 	url = https://github.com/makerdao/dss-gem-joins
+[submodule "lib/dss-proxy-actions"]
+	path = lib/dss-proxy-actions
+	url = https://github.com/makerdao/dss-proxy-actions
