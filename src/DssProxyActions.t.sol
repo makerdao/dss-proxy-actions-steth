@@ -4,6 +4,7 @@ pragma solidity ^0.6.12;
 
 import "ds-test/test.sol";
 
+import {DssProxyActionsSteth, DssProxyActionsEndSteth} from "./DssProxyActionsSteth.sol";
 import {DssProxyActions, DssProxyActionsEnd, DssProxyActionsDsr} from "dss-proxy-actions/DssProxyActions.sol";
 
 import {DssDeployTestBase, GemJoin, Flipper, DSToken} from "dss-deploy/DssDeploy.t.base.sol";
