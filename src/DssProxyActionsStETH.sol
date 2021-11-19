@@ -311,9 +311,17 @@ contract DssProxyActionsStETH is Common {
         address urn = manager.urns(cdp);
         // Receives stETH amount, converts it to WstETH and joins it into the vat
         uint256 wad = stETHJoin_join(WstETHJoin, urn, amtC);
-        // Locks WstETH amount into the CDP and generates debt, avoid stack too depp
-        int256 dart = _getDrawDart(jug, urn, manager.ilks(cdp), wadD);
-        _frob(cdp, _toInt256(wad), dart);
+        // Locks WstETH amount into the CDP and generates debt
+        _frob(
+            cdp,
+            _toInt256(wad),
+            _getDrawDart(
+                jug,
+                urn,
+                manager.ilks(cdp),
+                wadD
+            )
+        );
         // Moves the DAI amount (balance in the vat in rad) to proxy's address
         _move(cdp, address(this), _toRad(wadD));
         // Allows adapter to access to proxy's DAI balance in the vat
@@ -344,10 +352,12 @@ contract DssProxyActionsStETH is Common {
         uint256 wadD
     ) public {
         address urn = manager.urns(cdp);
+        GemLike gem = GemJoinLike(WstETHJoin).gem();
+
         // Joins DAI amount into the vat
         daiJoin_join(daiJoin, urn, wadD);
-        // Calculates how much WstETH to exit, not extracting gem to avoid stack too deep
-        uint256 wadC = GemJoinLike(WstETHJoin).gem().getWstETHByStETH(amtC);
+        // Calculates how much WstETH to exit
+        uint256 wadC = gem.getWstETHByStETH(amtC);
         // Paybacks debt to the CDP and unlocks WstETH amount from it
         _frob(
             cdp,
@@ -355,7 +365,7 @@ contract DssProxyActionsStETH is Common {
             _getWipeDart(
                 vat.dai(urn),
                 urn,
-                    manager.ilks(cdp)
+                manager.ilks(cdp)
             )
         );
         // Moves the amount from the CDP urn to proxy's address
@@ -363,9 +373,9 @@ contract DssProxyActionsStETH is Common {
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wadC);
         // Converts WstETH to StETH
-        uint256 unwrapped = GemJoinLike(WstETHJoin).gem().unwrap(wadC);
+        uint256 unwrapped = gem.unwrap(wadC);
         // Sends StETH back to the user's wallet
-        GemLike(GemJoinLike(WstETHJoin).gem().stETH()).transfer(msg.sender, unwrapped);
+        GemLike(gem.stETH()).transfer(msg.sender, unwrapped);
     }
 
     function wipeAllAndFreeStETH(
