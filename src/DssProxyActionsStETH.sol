@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// DssProxyActionsSteth.sol
+/// DssProxyActionsStETH.sol
 
 // Copyright (C) 2018-2020 Maker Ecosystem Growth Holdings, INC.
 
@@ -111,7 +111,7 @@ contract Common {
     }
 }
 
-contract DssProxyActionsSteth is Common {
+contract DssProxyActionsStETH is Common {
 
     constructor(address vat_, address manager_) public Common(vat_, manager_) {}
 
@@ -400,7 +400,7 @@ contract DssProxyActionsSteth is Common {
     }
 }
 
-contract DssProxyActionsEndSteth is Common {
+contract DssProxyActionsEndStETH is Common {
 
     constructor(address vat_, address manager_) public Common(vat_, manager_) {}
 

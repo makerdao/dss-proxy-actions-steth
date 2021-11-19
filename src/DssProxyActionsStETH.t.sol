@@ -4,7 +4,7 @@ pragma solidity ^0.6.12;
 
 import "ds-test/test.sol";
 
-import {DssProxyActionsSteth, DssProxyActionsEndSteth} from "./DssProxyActionsSteth.sol";
+import {DssProxyActionsStETH, DssProxyActionsEndStETH} from "./DssProxyActionsStETH.sol";
 import {DssProxyActions, DssProxyActionsEnd} from "dss-proxy-actions/DssProxyActions.sol";
 
 import {DssDeployTestBase, GemJoin, DSToken} from "dss-deploy/DssDeploy.t.base.sol";
@@ -59,8 +59,8 @@ contract ProxyCalls {
     DSProxy proxy;
     address dssProxyActions;
     address dssProxyActionsEnd;
-    address dssProxyActionsSteth;
-    address dssProxyActionsEndSteth;
+    address dssProxyActionsStETH;
+    address dssProxyActionsEndStETH;
 
     function open(address, bytes32, address) public returns (uint256 cdp) {
         bytes memory response = proxy.execute(dssProxyActions, msg.data);
@@ -74,42 +74,42 @@ contract ProxyCalls {
     }
 
     function lockStETH(address, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function safeLockStETH(address, uint256, uint256, address) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function freeStETH(address, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function exitStETH(address, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function lockStETHAndDraw(address, address, address, uint256, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function openLockStETHAndDraw(address, address, address, bytes32, uint256, uint256) public returns (uint256 cdp) {
-        bytes memory response = proxy.execute(dssProxyActionsSteth, msg.data);
+        bytes memory response = proxy.execute(dssProxyActionsStETH, msg.data);
         assembly {
             cdp := mload(add(response, 0x20))
         }
     }
 
     function wipeAndFreeStETH(address, address, uint256, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function wipeAllAndFreeStETH(address, address, uint256, uint256) public {
-        proxy.execute(dssProxyActionsSteth, msg.data);
+        proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
     function end_freeStETH(address a, address b, uint256 c) public {
-        proxy.execute(dssProxyActionsEndSteth, abi.encodeWithSignature("freeStETH(address,address,uint256)", a, b, c));
+        proxy.execute(dssProxyActionsEndStETH, abi.encodeWithSignature("freeStETH(address,address,uint256)", a, b, c));
     }
 
     function end_pack(address a, address b, uint256 c) public {
@@ -117,7 +117,7 @@ contract ProxyCalls {
     }
 
     function end_cashStETH(address a, address b, bytes32 c, uint256 d) public {
-        proxy.execute(dssProxyActionsEndSteth, abi.encodeWithSignature("cashStETH(address,address,bytes32,uint256)", a, b, c, d));
+        proxy.execute(dssProxyActionsEndStETH, abi.encodeWithSignature("cashStETH(address,address,bytes32,uint256)", a, b, c, d));
     }
 }
 
@@ -154,8 +154,8 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         registry = new ProxyRegistry(address(factory));
         dssProxyActions = address(new DssProxyActions());
         dssProxyActionsEnd = address(new DssProxyActionsEnd());
-        dssProxyActionsSteth = address(new DssProxyActionsSteth(address(vat), address(manager)));
-        dssProxyActionsEndSteth = address(new DssProxyActionsEndSteth(address(vat), address(manager)));
+        dssProxyActionsStETH = address(new DssProxyActionsStETH(address(vat), address(manager)));
+        dssProxyActionsEndStETH = address(new DssProxyActionsEndStETH(address(vat), address(manager)));
         proxy = DSProxy(registry.build());
     }
 
