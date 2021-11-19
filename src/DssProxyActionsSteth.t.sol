@@ -7,11 +7,10 @@ import "ds-test/test.sol";
 import {DssProxyActionsSteth, DssProxyActionsEndSteth} from "./DssProxyActionsSteth.sol";
 import {DssProxyActions, DssProxyActionsEnd} from "dss-proxy-actions/DssProxyActions.sol";
 
-import {DssDeployTestBase, GemJoin, Flipper, DSToken} from "dss-deploy/DssDeploy.t.base.sol";
+import {DssDeployTestBase, GemJoin, DSToken} from "dss-deploy/DssDeploy.t.base.sol";
 import {DSValue} from "ds-value/value.sol";
 import {DssCdpManager} from "dss-cdp-manager/DssCdpManager.sol";
 import {ProxyRegistry, DSProxyFactory, DSProxy} from "proxy-registry/ProxyRegistry.sol";
-import {WETH9_} from "ds-weth/weth9.sol";
 
 contract WstETH is DSToken{
     DSToken public stETH;
@@ -130,7 +129,6 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
     WstETH wstETH;
     DSValue pipWSTETH;
     GemJoin wstETHJoin;
-    Flipper wstETHFlip;
 
     function setUp() public override {
         super.setUp();
@@ -144,7 +142,6 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         wstETHJoin = new GemJoin(address(vat), "WSTETH", address(wstETH));
         pipWSTETH = new DSValue();
         dssDeploy.deployCollateralFlip("WSTETH", address(wstETHJoin), address(pipWSTETH));
-        (wstETHFlip,,) = dssDeploy.ilks("WSTETH");
         pipWSTETH.poke(bytes32(uint256(50 ether))); // Price 50 DAI = 1 WSTETH (in precision 18)
         this.file(address(spotter), "WSTETH", "mat", uint256(1500000000 ether)); // Liquidation ratio 150%
         this.file(address(vat), bytes32("WSTETH"), bytes32("line"), uint256(10000 * RAD));
@@ -301,9 +298,6 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         this.end_pack(address(daiJoin), address(end), 5 ether);
 
         this.end_cashStETH(address(wstETHJoin), address(end), "WSTETH", 5 ether);
-
         assertEq(stETH.balanceOf(address(this)), prevBalanceStETH + 1 ether - 1); // (-1 rounding)
     }
-
-    receive() external payable {}
 }
