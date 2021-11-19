@@ -189,7 +189,7 @@ contract DssProxyActionsStETH is Common {
     function _open(
         bytes32 ilk,
         address usr
-    ) public returns (uint256 cdp) {
+    ) internal returns (uint256 cdp) {
         cdp = manager.open(ilk, usr);
     }
 
@@ -197,7 +197,7 @@ contract DssProxyActionsStETH is Common {
         uint256 cdp,
         address dst,
         uint256 wad
-    ) public {
+    ) internal {
         manager.flux(cdp, dst, wad);
     }
 
@@ -205,7 +205,7 @@ contract DssProxyActionsStETH is Common {
         uint256 cdp,
         address dst,
         uint256 rad
-    ) public {
+    ) internal {
         manager.move(cdp, dst, rad);
     }
 
@@ -213,7 +213,7 @@ contract DssProxyActionsStETH is Common {
         uint256 cdp,
         int256 dink,
         int256 dart
-    ) public {
+    ) internal {
         manager.frob(cdp, dink, dart);
     }
 
