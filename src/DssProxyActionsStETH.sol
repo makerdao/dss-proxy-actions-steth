@@ -179,11 +179,18 @@ contract DssProxyActionsStETH is Common {
         // Gets actual art value of the urn
         (, uint256 art) = vat.urns(ilk, urn);
 
-        uint256 rad = _sub(_mul(art, rate), vat.dai(usr));
-        wad = rad / RAY;
+        // Gets DAI balance of the urn in the vat
+        uint256 dai = vat.dai(usr);
 
-        // If the rad precision has some dust, it will need to request for 1 extra wad wei
-        wad = _mul(wad, RAY) < rad ? wad + 1 : wad;
+        // If there was already enough DAI in the vat balance, no need to join more
+        uint256 debt = _mul(art, rate);
+        if (debt > dai) {
+            uint256 rad = _sub(debt, dai);
+            wad = rad / RAY;
+
+            // If the rad precision has some dust, it will need to request for 1 extra wad wei
+            wad = _mul(wad, RAY) < rad ? wad + 1 : wad;
+        }
     }
 
     function _open(
