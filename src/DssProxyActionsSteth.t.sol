@@ -73,43 +73,43 @@ contract ProxyCalls {
         proxy.execute(dssProxyActions, msg.data);
     }
 
-    function lockStETH(address, address, uint256, uint256) public {
+    function lockStETH(address, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function safeLockStETH(address, address, uint256, uint256, address) public {
+    function safeLockStETH(address, uint256, uint256, address) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function freeStETH(address, address, uint256, uint256) public {
+    function freeStETH(address, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function exitStETH(address, address, uint256, uint256) public {
+    function exitStETH(address, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function lockStETHAndDraw(address, address, address, address, uint256, uint256, uint256) public {
+    function lockStETHAndDraw(address, address, address, uint256, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function openLockStETHAndDraw(address, address, address, address, bytes32, uint256, uint256) public returns (uint256 cdp) {
+    function openLockStETHAndDraw(address, address, address, bytes32, uint256, uint256) public returns (uint256 cdp) {
         bytes memory response = proxy.execute(dssProxyActionsSteth, msg.data);
         assembly {
             cdp := mload(add(response, 0x20))
         }
     }
 
-    function wipeAndFreeStETH(address, address, address, uint256, uint256, uint256) public {
+    function wipeAndFreeStETH(address, address, uint256, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function wipeAllAndFreeStETH(address, address, address, uint256, uint256) public {
+    function wipeAllAndFreeStETH(address, address, uint256, uint256) public {
         proxy.execute(dssProxyActionsSteth, msg.data);
     }
 
-    function end_freeStETH(address a, address b, address c, uint256 d) public {
-        proxy.execute(dssProxyActionsEndSteth, abi.encodeWithSignature("freeStETH(address,address,address,uint256)", a, b, c, d));
+    function end_freeStETH(address a, address b, uint256 c) public {
+        proxy.execute(dssProxyActionsEndSteth, abi.encodeWithSignature("freeStETH(address,address,uint256)", a, b, c));
     }
 
     function end_pack(address a, address b, uint256 c) public {
@@ -154,8 +154,8 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         registry = new ProxyRegistry(address(factory));
         dssProxyActions = address(new DssProxyActions());
         dssProxyActionsEnd = address(new DssProxyActionsEnd());
-        dssProxyActionsSteth = address(new DssProxyActionsSteth());
-        dssProxyActionsEndSteth = address(new DssProxyActionsEndSteth());
+        dssProxyActionsSteth = address(new DssProxyActionsSteth(address(vat), address(manager)));
+        dssProxyActionsEndSteth = address(new DssProxyActionsEndSteth(address(vat), address(manager)));
         proxy = DSProxy(registry.build());
     }
 
@@ -172,7 +172,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(proxy), 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         uint256 prevBalance = wstETH.balanceOf(address(this));
-        this.lockStETH(address(manager), address(wstETHJoin), cdp, 2 ether);
+        this.lockStETH(address(wstETHJoin), cdp, 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
@@ -182,7 +182,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(proxy), 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         uint256 prevBalance = wstETH.balanceOf(address(this));
-        this.safeLockStETH(address(manager), address(wstETHJoin), cdp, 2 ether, address(proxy));
+        this.safeLockStETH(address(wstETHJoin), cdp, 2 ether, address(proxy));
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
@@ -193,7 +193,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(proxy), 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         uint256 prevBalance = wstETH.balanceOf(address(this));
-        this.lockStETH(address(manager), address(wstETHJoin), cdp, 2 ether);
+        this.lockStETH(address(wstETHJoin), cdp, 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)),wstETH.getWstETHByStETH(2 ether));
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
@@ -202,18 +202,18 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         this.give(address(manager), cdp, address(123));
         stETH.approve(address(proxy), 2 ether);
-        this.safeLockStETH(address(manager), address(wstETHJoin), cdp, 2 ether, address(321));
+        this.safeLockStETH(address(wstETHJoin), cdp, 2 ether, address(321));
     }
 
     function testFreeStETH() public {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         stETH.approve(address(proxy), 2.756 ether);
         uint256 prevBalance = stETH.balanceOf(address(this));
-        this.lockStETH(address(manager), address(wstETHJoin), cdp, 2.756 ether);
+        this.lockStETH(address(wstETHJoin), cdp, 2.756 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2.756 ether));
         // Due to wrap precision loss the stored wstETH is equivalent to 1 wei less of stETH
         assertEq(wstETH.getStETHByWstETH(ink("WSTETH", manager.urns(cdp))), 2.756 ether - 1);
-        this.freeStETH(address(manager), address(wstETHJoin), cdp, 1.23 ether);
+        this.freeStETH(address(wstETHJoin), cdp, 1.23 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(1.526 ether));
         // Due to unwrap precision loss the returned stETH is 1 wei less than requested
         assertEq(stETH.balanceOf(address(this)), prevBalance - 1.526 ether - 1);
@@ -225,7 +225,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         assertEq(dai.balanceOf(address(this)), 0);
         uint256 prevBalance = stETH.balanceOf(address(this));
-        this.lockStETHAndDraw(address(manager), address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
+        this.lockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(dai.balanceOf(address(this)), 10 ether);
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
@@ -235,7 +235,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(proxy), 2 ether);
         assertEq(dai.balanceOf(address(this)), 0);
         uint256 prevBalance = stETH.balanceOf(address(this));
-        uint256 cdp = this.openLockStETHAndDraw(address(manager), address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 2 ether, 10 ether);
+        uint256 cdp = this.openLockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 2 ether, 10 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(dai.balanceOf(address(this)), 10 ether);
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
@@ -245,9 +245,9 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         stETH.approve(address(proxy), 2 ether);
         uint256 prevBalance = stETH.balanceOf(address(this));
-        this.lockStETHAndDraw(address(manager), address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
+        this.lockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
         dai.approve(address(proxy), 8 ether);
-        this.wipeAndFreeStETH(address(manager), address(wstETHJoin), address(daiJoin), cdp, 1.5 ether, 8 ether);
+        this.wipeAndFreeStETH(address(wstETHJoin), address(daiJoin), cdp, 1.5 ether, 8 ether);
         // Due to unwrap precision loss an extra 1 wei of ink resides in the vault
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(0.5 ether) + 1);
         assertEq(art("WSTETH", manager.urns(cdp)), 2 ether);
@@ -260,9 +260,9 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         stETH.approve(address(proxy), 2 ether);
         uint256 prevBalance = stETH.balanceOf(address(this));
-        this.lockStETHAndDraw(address(manager), address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
+        this.lockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
         dai.approve(address(proxy), 10 ether);
-        this.wipeAllAndFreeStETH(address(manager), address(wstETHJoin), address(daiJoin), cdp, 1.5 ether);
+        this.wipeAllAndFreeStETH(address(wstETHJoin), address(daiJoin), cdp, 1.5 ether);
         // Due to unwrap precision loss an extra 1 wei of ink resides in the vault
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(0.5 ether) + 1);
         assertEq(art("WSTETH", manager.urns(cdp)), 0);
@@ -273,7 +273,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
 
     function testEnd() public {
         stETH.approve(address(proxy), 1 ether);
-        uint256 cdp = this.openLockStETHAndDraw(address(manager), address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 1 * 10 ** 18, 5 ether);
+        uint256 cdp = this.openLockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 1 * 10 ** 18, 5 ether);
 
         this.cage(address(end));
         end.cage("WSTETH");
@@ -283,7 +283,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(artV, 5 ether);
 
         uint256 prevBalanceStETH = stETH.balanceOf(address(this));
-        this.end_freeStETH(address(manager), address(wstETHJoin), address(end), cdp);
+        this.end_freeStETH(address(wstETHJoin), address(end), cdp);
         (inkV, artV) = vat.urns("WSTETH", manager.urns(cdp));
         assertEq(inkV, 0);
         assertEq(artV, 0);

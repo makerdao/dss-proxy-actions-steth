@@ -84,6 +84,14 @@ interface JugLike {
 contract Common {
     uint256 constant RAY = 10 ** 27;
 
+    VatLike     immutable public vat;
+    ManagerLike immutable public manager;
+
+    constructor(address vat_, address manager_) public {
+        vat = VatLike(vat_);
+        manager = ManagerLike(manager_);
+    }
+
     // Internal functions
 
     function _mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
@@ -104,6 +112,9 @@ contract Common {
 }
 
 contract DssProxyActionsSteth is Common {
+
+    constructor(address vat_, address manager_) public Common(vat_, manager_) {}
+
     // Internal functions
 
     function _sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
@@ -120,7 +131,6 @@ contract DssProxyActionsSteth is Common {
     }
 
     function _getDrawDart(
-        address vat,
         address jug,
         address urn,
         bytes32 ilk,
@@ -130,7 +140,7 @@ contract DssProxyActionsSteth is Common {
         uint256 rate = JugLike(jug).drip(ilk);
 
         // Gets DAI balance of the urn in the vat
-        uint256 dai = VatLike(vat).dai(urn);
+        uint256 dai = vat.dai(urn);
 
         // If there was already enough DAI in the vat balance, just exits it without adding more debt
         uint256 rad = _mul(wad, RAY);
@@ -144,15 +154,14 @@ contract DssProxyActionsSteth is Common {
     }
 
     function _getWipeDart(
-        address vat,
         uint256 dai,
         address urn,
         bytes32 ilk
     ) internal view returns (int256 dart) {
         // Gets actual rate from the vat
-        (, uint256 rate,,,) = VatLike(vat).ilks(ilk);
+        (, uint256 rate,,,) = vat.ilks(ilk);
         // Gets actual art value of the urn
-        (, uint256 art) = VatLike(vat).urns(ilk, urn);
+        (, uint256 art) = vat.urns(ilk, urn);
 
         // Uses the whole dai balance in the vat to reduce the debt
         dart = _toInt256(dai / rate);
@@ -161,21 +170,51 @@ contract DssProxyActionsSteth is Common {
     }
 
     function _getWipeAllWad(
-        address vat,
         address usr,
         address urn,
         bytes32 ilk
     ) internal view returns (uint256 wad) {
         // Gets actual rate from the vat
-        (, uint256 rate,,,) = VatLike(vat).ilks(ilk);
+        (, uint256 rate,,,) = vat.ilks(ilk);
         // Gets actual art value of the urn
-        (, uint256 art) = VatLike(vat).urns(ilk, urn);
+        (, uint256 art) = vat.urns(ilk, urn);
 
-        uint256 rad = _sub(_mul(art, rate), VatLike(vat).dai(usr));
+        uint256 rad = _sub(_mul(art, rate), vat.dai(usr));
         wad = rad / RAY;
 
         // If the rad precision has some dust, it will need to request for 1 extra wad wei
         wad = _mul(wad, RAY) < rad ? wad + 1 : wad;
+    }
+
+    function _open(
+        bytes32 ilk,
+        address usr
+    ) public returns (uint256 cdp) {
+        cdp = manager.open(ilk, usr);
+    }
+
+    function _flux(
+        uint256 cdp,
+        address dst,
+        uint256 wad
+    ) public {
+        manager.flux(cdp, dst, wad);
+    }
+
+    function _move(
+        uint256 cdp,
+        address dst,
+        uint256 rad
+    ) public {
+        manager.move(cdp, dst, rad);
+    }
+
+    function _frob(
+        uint256 cdp,
+        int256 dink,
+        int256 dart
+    ) public {
+        manager.frob(cdp, dink, dart);
     }
 
     // Public functions
@@ -195,43 +234,7 @@ contract DssProxyActionsSteth is Common {
         GemJoinLike(WstETHJoin).join(urn, wad);
     }
 
-    function open(
-        address manager,
-        bytes32 ilk,
-        address usr
-    ) public returns (uint256 cdp) {
-        cdp = ManagerLike(manager).open(ilk, usr);
-    }
-
-    function flux(
-        address manager,
-        uint256 cdp,
-        address dst,
-        uint256 wad
-    ) public {
-        ManagerLike(manager).flux(cdp, dst, wad);
-    }
-
-    function move(
-        address manager,
-        uint256 cdp,
-        address dst,
-        uint256 rad
-    ) public {
-        ManagerLike(manager).move(cdp, dst, rad);
-    }
-
-    function frob(
-        address manager,
-        uint256 cdp,
-        int256 dink,
-        int256 dart
-    ) public {
-        ManagerLike(manager).frob(cdp, dink, dart);
-    }
-
     function lockStETH(
-        address manager,
         address WstETHJoin,
         uint256 cdp,
         uint256 amt
@@ -239,9 +242,9 @@ contract DssProxyActionsSteth is Common {
         // Receives stETH amount, converts it to WstETH and joins it into the vat
         uint256 wad = stETHJoin_join(WstETHJoin, address(this), amt);
         // Locks WstETH amount into the CDP
-        VatLike(ManagerLike(manager).vat()).frob(
-            ManagerLike(manager).ilks(cdp),
-            ManagerLike(manager).urns(cdp),
+        vat.frob(
+            manager.ilks(cdp),
+            manager.urns(cdp),
             address(this),
             address(this),
             _toInt256(wad),
@@ -250,18 +253,16 @@ contract DssProxyActionsSteth is Common {
     }
 
     function safeLockStETH(
-        address manager,
         address WstETHJoin,
         uint256 cdp,
         uint256 amt,
         address owner
     ) public {
-        require(ManagerLike(manager).owns(cdp) == owner, "owner-missmatch");
-        lockStETH(manager, WstETHJoin, cdp, amt);
+        require(manager.owns(cdp) == owner, "owner-missmatch");
+        lockStETH(WstETHJoin, cdp, amt);
     }
 
     function freeStETH(
-        address manager,
         address WstETHJoin,
         uint256 cdp,
         uint256 amt
@@ -270,9 +271,9 @@ contract DssProxyActionsSteth is Common {
         // Calculates how much WstETH to free
         uint256 wad = gem.getWstETHByStETH(amt);
         // Unlocks WstETH amount from the CDP
-        frob(manager, cdp, -_toInt256(wad), 0);
+        _frob(cdp, -_toInt256(wad), 0);
         // Moves the amount from the CDP urn to proxy's address
-        flux(manager, cdp, address(this), wad);
+        _flux(cdp, address(this), wad);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wad);
         // Converts WstETH to StETH
@@ -282,7 +283,6 @@ contract DssProxyActionsSteth is Common {
     }
 
     function exitStETH(
-        address manager,
         address WstETHJoin,
         uint256 cdp,
         uint256 amt
@@ -291,7 +291,7 @@ contract DssProxyActionsSteth is Common {
         // Calculates how much WstETH to exit
         uint256 wad = gem.getWstETHByStETH(amt);
         // Moves the amount from the CDP urn to proxy's address
-        flux(manager, cdp, address(this), wad);
+        _flux(cdp, address(this), wad);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wad);
         // Converts WstETH to StETH
@@ -301,7 +301,6 @@ contract DssProxyActionsSteth is Common {
     }
 
     function lockStETHAndDraw(
-        address manager,
         address jug,
         address WstETHJoin,
         address daiJoin,
@@ -309,25 +308,23 @@ contract DssProxyActionsSteth is Common {
         uint256 amtC,
         uint256 wadD
     ) public {
-        address urn = ManagerLike(manager).urns(cdp);
-        address vat = ManagerLike(manager).vat();
+        address urn = manager.urns(cdp);
         // Receives stETH amount, converts it to WstETH and joins it into the vat
         uint256 wad = stETHJoin_join(WstETHJoin, urn, amtC);
         // Locks WstETH amount into the CDP and generates debt, avoid stack too depp
-        int256 dart = _getDrawDart(vat, jug, urn, ManagerLike(manager).ilks(cdp), wadD);
-        frob(manager, cdp, _toInt256(wad), dart);
+        int256 dart = _getDrawDart(jug, urn, manager.ilks(cdp), wadD);
+        _frob(cdp, _toInt256(wad), dart);
         // Moves the DAI amount (balance in the vat in rad) to proxy's address
-        move(manager, cdp, address(this), _toRad(wadD));
+        _move(cdp, address(this), _toRad(wadD));
         // Allows adapter to access to proxy's DAI balance in the vat
-        if (VatLike(vat).can(address(this), address(daiJoin)) == 0) {
-            VatLike(vat).hope(daiJoin);
+        if (vat.can(address(this), address(daiJoin)) == 0) {
+            vat.hope(daiJoin);
         }
         // Exits DAI to the user's wallet as a token
         DaiJoinLike(daiJoin).exit(msg.sender, wadD);
     }
 
     function openLockStETHAndDraw(
-        address manager,
         address jug,
         address WstETHJoin,
         address daiJoin,
@@ -335,37 +332,34 @@ contract DssProxyActionsSteth is Common {
         uint256 amtC,
         uint256 wadD
     ) public returns (uint256 cdp) {
-        cdp = open(manager, ilk, address(this));
-        lockStETHAndDraw(manager, jug, WstETHJoin, daiJoin, cdp, amtC, wadD);
+        cdp = _open(ilk, address(this));
+        lockStETHAndDraw(jug, WstETHJoin, daiJoin, cdp, amtC, wadD);
     }
 
     function wipeAndFreeStETH(
-        address manager,
         address WstETHJoin,
         address daiJoin,
         uint256 cdp,
         uint256 amtC,
         uint256 wadD
     ) public {
-        address urn = ManagerLike(manager).urns(cdp);
+        address urn = manager.urns(cdp);
         // Joins DAI amount into the vat
         daiJoin_join(daiJoin, urn, wadD);
         // Calculates how much WstETH to exit, not extracting gem to avoid stack too deep
         uint256 wadC = GemJoinLike(WstETHJoin).gem().getWstETHByStETH(amtC);
         // Paybacks debt to the CDP and unlocks WstETH amount from it
-        frob(
-            manager,
+        _frob(
             cdp,
             -_toInt256(wadC),
             _getWipeDart(
-                ManagerLike(manager).vat(),
-                VatLike(ManagerLike(manager).vat()).dai(urn),
+                vat.dai(urn),
                 urn,
-                ManagerLike(manager).ilks(cdp)
+                    manager.ilks(cdp)
             )
         );
         // Moves the amount from the CDP urn to proxy's address
-        flux(manager, cdp, address(this), wadC);
+        _flux(cdp, address(this), wadC);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wadC);
         // Converts WstETH to StETH
@@ -375,31 +369,28 @@ contract DssProxyActionsSteth is Common {
     }
 
     function wipeAllAndFreeStETH(
-        address manager,
         address WstETHJoin,
         address daiJoin,
         uint256 cdp,
         uint256 amtC
     ) public {
-        address vat = ManagerLike(manager).vat();
-        address urn = ManagerLike(manager).urns(cdp);
-        bytes32 ilk = ManagerLike(manager).ilks(cdp);
-        (, uint256 art) = VatLike(vat).urns(ilk, urn);
+        address urn = manager.urns(cdp);
+        bytes32 ilk = manager.ilks(cdp);
+        (, uint256 art) = vat.urns(ilk, urn);
         GemLike gem = GemJoinLike(WstETHJoin).gem();
 
         // Joins DAI amount into the vat
-        daiJoin_join(daiJoin, urn, _getWipeAllWad(vat, urn, urn, ilk));
+        daiJoin_join(daiJoin, urn, _getWipeAllWad(urn, urn, ilk));
         // Calculates how much WstETH to exit
         uint256 wadC = gem.getWstETHByStETH(amtC);
         // Paybacks debt to the CDP and unlocks WstETH amount from it
-        frob(
-            manager,
+        _frob(
             cdp,
             -_toInt256(wadC),
             -_toInt256(art)
         );
         // Moves the amount from the CDP urn to proxy's address
-        flux(manager, cdp, address(this), wadC);
+        _flux(cdp, address(this), wadC);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wadC);
         // Converts WstETH to StETH
@@ -410,16 +401,17 @@ contract DssProxyActionsSteth is Common {
 }
 
 contract DssProxyActionsEndSteth is Common {
+
+    constructor(address vat_, address manager_) public Common(vat_, manager_) {}
+
     // Internal functions
 
     function _free(
-        address manager,
         address end,
         uint256 cdp
     ) internal returns (uint256 ink) {
-        bytes32 ilk = ManagerLike(manager).ilks(cdp);
-        address urn = ManagerLike(manager).urns(cdp);
-        VatLike vat = VatLike(ManagerLike(manager).vat());
+        bytes32 ilk = manager.ilks(cdp);
+        address urn = manager.urns(cdp);
         uint256 art;
         (ink, art) = vat.urns(ilk, urn);
 
@@ -430,22 +422,21 @@ contract DssProxyActionsEndSteth is Common {
         }
         // Approves the manager to transfer the position to proxy's address in the vat
         if (vat.can(address(this), address(manager)) == 0) {
-            vat.hope(manager);
+            vat.hope(address(manager));
         }
         // Transfers position from CDP to the proxy address
-        ManagerLike(manager).quit(cdp, address(this));
+        manager.quit(cdp, address(this));
         // Frees the position and recovers the collateral in the vat registry
         EndLike(end).free(ilk);
     }
 
     function freeStETH(
-        address manager,
         address WstETHJoin,
         address end,
         uint256 cdp
     ) public {
         GemLike gem = GemJoinLike(WstETHJoin).gem();
-        uint256 wad = _free(manager, end, cdp);
+        uint256 wad = _free(end, cdp);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wad);
         // Converts WstETH to StETH
