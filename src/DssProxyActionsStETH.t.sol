@@ -271,6 +271,21 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(stETH.balanceOf(address(this)), prevBalance - 0.5 ether - 1);
     }
 
+    function testExitStETH() public {
+        uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
+        uint256 prevBalance = stETH.balanceOf(address(this));
+
+        // explicitly join wStETH
+        stETH.approve(address(wstETH), 2 ether);
+        uint256 wrapped = wstETH.wrap(2 ether);
+        wstETH.approve(address(wstETHJoin), wrapped);
+        wstETHJoin.join(manager.urns(cdp) ,wrapped);
+        assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
+
+        this.exitStETH(address(wstETHJoin), cdp, 2 ether);
+        assertEq(stETH.balanceOf(address(this)), prevBalance);
+    }
+
     function testEnd() public {
         stETH.approve(address(proxy), 1 ether);
         uint256 cdp = this.openLockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 1 * 10 ** 18, 5 ether);
