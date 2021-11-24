@@ -254,7 +254,6 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(dai.balanceOf(address(this)), 2 ether);
         // Due to unwrap precision loss the returned stETH is 1 wei less than requested
         assertEq(stETH.balanceOf(address(this)), prevBalance + 1.5 ether - 1);
-        assertEq(dai.balanceOf(address(proxy), 2 ether);
     }
 
     function testWipeAllAndFreeStETH() public {
@@ -270,7 +269,6 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(dai.balanceOf(address(this)), 0);
         // Due to unwrap precision loss the returned stETH is 1 wei less than requested
         assertEq(stETH.balanceOf(address(this)), prevBalance + 1.5 ether - 1);
-        assertEq(dai.balanceOf(address(proxy), 0);
     }
 
     function testExitStETH() public {
