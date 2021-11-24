@@ -20,11 +20,11 @@ contract WstETH is DSToken{
         stETH = _stETH;
     }
 
-    function _getSharesByPooledEth(uint256 _stETHAmount) internal view returns (uint256) {
+    function _getSharesByPooledEth(uint256 _stETHAmount) internal pure returns (uint256) {
         return _stETHAmount * SharesByPooledEth / 1e18;
     }
 
-    function _getPooledEthByShares(uint256 _wstETHAmount) internal view returns (uint256) {
+    function _getPooledEthByShares(uint256 _wstETHAmount) internal pure returns (uint256) {
         return _wstETHAmount * 1e18 / SharesByPooledEth;
     }
 
