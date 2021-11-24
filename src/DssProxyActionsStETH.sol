@@ -189,37 +189,6 @@ contract DssProxyActionsStETH is Common {
         }
     }
 
-    function _open(
-        bytes32 ilk,
-        address usr
-    ) internal returns (uint256 cdp) {
-        cdp = manager.open(ilk, usr);
-    }
-
-    function _flux(
-        uint256 cdp,
-        address dst,
-        uint256 wad
-    ) internal {
-        manager.flux(cdp, dst, wad);
-    }
-
-    function _move(
-        uint256 cdp,
-        address dst,
-        uint256 rad
-    ) internal {
-        manager.move(cdp, dst, rad);
-    }
-
-    function _frob(
-        uint256 cdp,
-        int256 dink,
-        int256 dart
-    ) internal {
-        manager.frob(cdp, dink, dart);
-    }
-
     // Public functions
 
     function stETHJoin_join(address WstETHJoin, address urn, uint256 amt) public returns (uint256 wad) {
@@ -274,9 +243,9 @@ contract DssProxyActionsStETH is Common {
         // Calculates how much WstETH to free
         uint256 wad = gem.getWstETHByStETH(amt);
         // Unlocks WstETH amount from the CDP
-        _frob(cdp, -_toInt256(wad), 0);
+        manager.frob(cdp, -_toInt256(wad), 0);
         // Moves the amount from the CDP urn to proxy's address
-        _flux(cdp, address(this), wad);
+        manager.flux(cdp, address(this), wad);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wad);
         // Converts WstETH to StETH
@@ -294,7 +263,7 @@ contract DssProxyActionsStETH is Common {
         // Calculates how much WstETH to exit
         uint256 wad = gem.getWstETHByStETH(amt);
         // Moves the amount from the CDP urn to proxy's address
-        _flux(cdp, address(this), wad);
+        manager.flux(cdp, address(this), wad);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wad);
         // Converts WstETH to StETH
@@ -315,7 +284,7 @@ contract DssProxyActionsStETH is Common {
         // Receives stETH amount, converts it to WstETH and joins it into the vat
         uint256 wad = stETHJoin_join(WstETHJoin, urn, amtC);
         // Locks WstETH amount into the CDP and generates debt
-        _frob(
+        manager.frob(
             cdp,
             _toInt256(wad),
             _getDrawDart(
@@ -326,7 +295,7 @@ contract DssProxyActionsStETH is Common {
             )
         );
         // Moves the DAI amount (balance in the vat in rad) to proxy's address
-        _move(cdp, address(this), _toRad(wadD));
+        manager.move(cdp, address(this), _toRad(wadD));
         // Allows adapter to access to proxy's DAI balance in the vat
         if (vat.can(address(this), address(daiJoin)) == 0) {
             vat.hope(daiJoin);
@@ -343,7 +312,7 @@ contract DssProxyActionsStETH is Common {
         uint256 amtC,
         uint256 wadD
     ) public returns (uint256 cdp) {
-        cdp = _open(ilk, address(this));
+        cdp = manager.open(ilk, address(this));
         lockStETHAndDraw(jug, WstETHJoin, daiJoin, cdp, amtC, wadD);
     }
 
@@ -362,7 +331,7 @@ contract DssProxyActionsStETH is Common {
         // Calculates how much WstETH to exit
         uint256 wadC = gem.getWstETHByStETH(amtC);
         // Paybacks debt to the CDP and unlocks WstETH amount from it
-        _frob(
+        manager.frob(
             cdp,
             -_toInt256(wadC),
             _getWipeDart(
@@ -372,7 +341,7 @@ contract DssProxyActionsStETH is Common {
             )
         );
         // Moves the amount from the CDP urn to proxy's address
-        _flux(cdp, address(this), wadC);
+        manager.flux(cdp, address(this), wadC);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wadC);
         // Converts WstETH to StETH
@@ -397,13 +366,13 @@ contract DssProxyActionsStETH is Common {
         // Calculates how much WstETH to exit
         uint256 wadC = gem.getWstETHByStETH(amtC);
         // Paybacks debt to the CDP and unlocks WstETH amount from it
-        _frob(
+        manager.frob(
             cdp,
             -_toInt256(wadC),
             -_toInt256(art)
         );
         // Moves the amount from the CDP urn to proxy's address
-        _flux(cdp, address(this), wadC);
+        manager.flux(cdp, address(this), wadC);
         // Exits WstETH amount to proxy address as a token
         GemJoinLike(WstETHJoin).exit(address(this), wadC);
         // Converts WstETH to StETH
