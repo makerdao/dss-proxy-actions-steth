@@ -185,7 +185,7 @@ contract DssProxyActionsStETH is Common {
         // If there was already enough DAI in the vat balance, no need to join more
         uint256 debt = _mul(art, rate);
         if (debt > dai) {
-            uint256 rad = _sub(debt, dai);
+            uint256 rad = debt - dai;
             wad = rad / RAY;
 
             // If the rad precision has some dust, it will need to request for 1 extra wad wei
