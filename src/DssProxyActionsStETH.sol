@@ -282,11 +282,11 @@ contract DssProxyActionsStETH is Common {
     ) public {
         address urn = manager.urns(cdp);
         // Receives stETH amount, converts it to WstETH and joins it into the vat
-        uint256 wad = stETHJoin_join(wstETHJoin, urn, amtC);
+        uint256 wadC = stETHJoin_join(wstETHJoin, urn, amtC);
         // Locks WstETH amount into the CDP and generates debt
         manager.frob(
             cdp,
-            _toInt256(wad),
+            _toInt256(wadC),
             _getDrawDart(
                 jug,
                 urn,
