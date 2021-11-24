@@ -194,7 +194,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         uint256 prevBalance = wstETH.balanceOf(address(this));
         this.lockStETH(address(wstETHJoin), cdp, 2 ether);
-        assertEq(ink("WSTETH", manager.urns(cdp)),wstETH.getWstETHByStETH(2 ether));
+        assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
 
