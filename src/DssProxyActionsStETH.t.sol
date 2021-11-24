@@ -32,7 +32,7 @@ contract WstETH is DSToken {
         require(_stETHAmount > 0, "wstETH: can't wrap zero stETH");
         uint256 wstETHAmount = _getSharesByPooledEth(_stETHAmount);
         balanceOf[msg.sender] = add(balanceOf[msg.sender], wstETHAmount);
-        totalSupply= add(totalSupply , wstETHAmount);
+        totalSupply = add(totalSupply , wstETHAmount);
         stETH.transferFrom(msg.sender, address(this), _stETHAmount);
         return wstETHAmount;
     }
