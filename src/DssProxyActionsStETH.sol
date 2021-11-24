@@ -117,10 +117,6 @@ contract DssProxyActionsStETH is Common {
 
     // Internal functions
 
-    function _sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x - y) <= x, "sub-overflow");
-    }
-
     function _toInt256(uint256 x) internal pure returns (int256 y) {
         y = int256(x);
         require(y >= 0, "int-overflow");
