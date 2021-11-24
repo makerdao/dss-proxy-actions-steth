@@ -12,7 +12,7 @@ import {DSValue} from "ds-value/value.sol";
 import {DssCdpManager} from "dss-cdp-manager/DssCdpManager.sol";
 import {ProxyRegistry, DSProxyFactory, DSProxy} from "proxy-registry/ProxyRegistry.sol";
 
-contract WstETH is DSToken{
+contract WstETH is DSToken {
     DSToken public stETH;
     uint256 constant public SharesByPooledEth = 955629254121030571;
 
@@ -244,31 +244,33 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
     function testWipeAndFreeStETH() public {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         stETH.approve(address(proxy), 2 ether);
-        uint256 prevBalance = stETH.balanceOf(address(this));
         this.lockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
         dai.approve(address(proxy), 8 ether);
+        uint256 prevBalance = stETH.balanceOf(address(this));
         this.wipeAndFreeStETH(address(wstETHJoin), address(daiJoin), cdp, 1.5 ether, 8 ether);
         // Due to unwrap precision loss an extra 1 wei of ink resides in the vault
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(0.5 ether) + 1);
         assertEq(art("WSTETH", manager.urns(cdp)), 2 ether);
         assertEq(dai.balanceOf(address(this)), 2 ether);
         // Due to unwrap precision loss the returned stETH is 1 wei less than requested
-        assertEq(stETH.balanceOf(address(this)), prevBalance - 0.5 ether - 1);
+        assertEq(stETH.balanceOf(address(this)), prevBalance + 1.5 ether - 1);
+        assertEq(dai.balanceOf(address(proxy), 2 ether);
     }
 
     function testWipeAllAndFreeStETH() public {
         uint256 cdp = this.open(address(manager), "WSTETH", address(proxy));
         stETH.approve(address(proxy), 2 ether);
-        uint256 prevBalance = stETH.balanceOf(address(this));
         this.lockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), cdp, 2 ether, 10 ether);
         dai.approve(address(proxy), 10 ether);
+        uint256 prevBalance = stETH.balanceOf(address(this));
         this.wipeAllAndFreeStETH(address(wstETHJoin), address(daiJoin), cdp, 1.5 ether);
         // Due to unwrap precision loss an extra 1 wei of ink resides in the vault
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(0.5 ether) + 1);
         assertEq(art("WSTETH", manager.urns(cdp)), 0);
         assertEq(dai.balanceOf(address(this)), 0);
         // Due to unwrap precision loss the returned stETH is 1 wei less than requested
-        assertEq(stETH.balanceOf(address(this)), prevBalance - 0.5 ether - 1);
+        assertEq(stETH.balanceOf(address(this)), prevBalance + 1.5 ether - 1);
+        assertEq(dai.balanceOf(address(proxy), 0);
     }
 
     function testExitStETH() public {
