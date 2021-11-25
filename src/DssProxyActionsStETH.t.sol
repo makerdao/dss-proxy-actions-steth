@@ -77,8 +77,9 @@ contract ProxyCalls {
         proxy.execute(dssProxyActionsStETH, msg.data);
     }
 
-    function safeLockStETH(address, uint256, uint256, address) public {
-        proxy.execute(dssProxyActionsStETH, msg.data);
+    function trySafeLockStETH(address a, uint256 b, uint256 c, address d) public returns (bool ok){
+        bytes memory data = abi.encodeWithSignature("safeLockStETH(address,uint256,uint256,address)", a, b, c, d);
+        (ok,) = address(proxy).call(abi.encodeWithSignature("execute(address,bytes)", dssProxyActionsStETH, data));
     }
 
     function freeStETH(address, uint256, uint256) public {
@@ -182,7 +183,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(proxy), 2 ether);
         assertEq(ink("WSTETH", manager.urns(cdp)), 0);
         uint256 prevBalance = wstETH.balanceOf(address(this));
-        this.safeLockStETH(address(wstETHJoin), cdp, 2 ether, address(proxy));
+        assertTrue(this.trySafeLockStETH(address(wstETHJoin), cdp, 2 ether, address(proxy)));
         assertEq(ink("WSTETH", manager.urns(cdp)), wstETH.getWstETHByStETH(2 ether));
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
@@ -198,11 +199,11 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
     }
 
-    function testFailSafeLockStETHOtherCDPOwner() public {
+    function testSafeLockStETHOtherCDPOwner() public {
         uint256 cdp = this.open("WSTETH", address(proxy));
         this.give(cdp, address(123));
         stETH.approve(address(proxy), 2 ether);
-        this.safeLockStETH(address(wstETHJoin), cdp, 2 ether, address(321));
+        assertTrue(!this.trySafeLockStETH(address(wstETHJoin), cdp, 2 ether, address(321)));
     }
 
     function testFreeStETH() public {
