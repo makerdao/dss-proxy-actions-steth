@@ -14,3 +14,4 @@
 [submodule "lib/dss-proxy-actions"]
 	path = lib/dss-proxy-actions
 	url = https://github.com/makerdao/dss-proxy-actions
+	branch = dev
