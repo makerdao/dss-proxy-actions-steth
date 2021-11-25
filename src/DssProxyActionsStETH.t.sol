@@ -279,7 +279,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
         stETH.approve(address(wstETH), 2 ether);
         uint256 wrapped = wstETH.wrap(2 ether);
         wstETH.approve(address(wstETHJoin), wrapped);
-        wstETHJoin.join(manager.urns(cdp) ,wrapped);
+        wstETHJoin.join(manager.urns(cdp), wrapped);
         assertEq(stETH.balanceOf(address(this)), prevBalance - 2 ether);
 
         this.exitStETH(address(wstETHJoin), cdp, 2 ether);
