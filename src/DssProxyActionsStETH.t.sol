@@ -288,7 +288,7 @@ contract DssProxyActionsTest is DssDeployTestBase, ProxyCalls {
 
     function testEnd() public {
         stETH.approve(address(proxy), 1 ether);
-        uint256 cdp = this.openLockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 1 * 10 ** 18, 5 ether);
+        uint256 cdp = this.openLockStETHAndDraw(address(jug), address(wstETHJoin), address(daiJoin), "WSTETH", 1 * ether, 5 ether);
 
         this.cage(address(end));
         end.cage("WSTETH");
